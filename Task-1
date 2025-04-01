@@ -1,0 +1,68 @@
+import requests
+import matplotlib.pyplot as plt
+import seaborn as sns
+import datetime
+
+# Replace with your OpenWeatherMap API key
+API_KEY = "your_api_key"
+CITY = "London"
+
+# Fetch weather data
+def fetch_weather_data(city, api_key):
+    url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={api_key}&units=metric"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error for bad responses (4xx and 5xx)
+        data = response.json()
+        
+        if "list" not in data:
+            print("Error: 'list' key not found in API response.")
+            return None
+        return data
+    except requests.exceptions.RequestException as e:
+        print(f"API request error: {e}")
+        return None
+
+# Process weather data
+def process_weather_data(data):
+    if data is None:
+        return [], [], []
+    
+    timestamps = []
+    temperatures = []
+    humidities = []
+    
+    for entry in data.get("list", []):
+        timestamps.append(datetime.datetime.fromtimestamp(entry["dt"]))
+        temperatures.append(entry["main"]["temp"])
+        humidities.append(entry["main"]["humidity"])
+    
+    return timestamps, temperatures, humidities
+
+# Visualize data
+def plot_weather_data(timestamps, temperatures, humidities, city):
+    if not timestamps:
+        print("No data available for plotting.")
+        return
+
+    sns.set(style="darkgrid")
+    plt.figure(figsize=(12, 6))
+    
+    plt.plot(timestamps, temperatures, marker="o", linestyle="-", color="b", label="Temperature (°C)")
+    plt.plot(timestamps, humidities, marker="s", linestyle="--", color="g", label="Humidity (%)")
+    
+    plt.xlabel("Date & Time")
+    plt.ylabel("Values")
+    plt.title(f"Weather Forecast for {city}")
+    plt.xticks(rotation=45)
+    
+    # Adjust x-axis labels for better visibility
+    plt.gcf().autofmt_xdate()
+    
+    plt.legend()
+    plt.show()
+
+if __name__ == "__main__":
+    weather_data = fetch_weather_data(CITY, API_KEY)
+    timestamps, temperatures, humidities = process_weather_data(weather_data)
+    plot_weather_data(timestamps, temperatures, humidities, CITY)
